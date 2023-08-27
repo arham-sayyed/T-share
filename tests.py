@@ -2,7 +2,6 @@ import requests
 
 API_ENDPOINT = "https://api.web3.storage"
 API_TOKEN = ""
-
 headers = {
     "Authorization": f"Bearer {API_TOKEN}",
     "Content-Type": "application/x-directory"
