@@ -41,6 +41,11 @@ def update_token(token: str): # called to change the token or add on installatio
 
 
 
+def get_token() -> str | bool:
+    if check_env_token():
+        return str(os.environ['TSHARE_AUTH_TOKEN'])
+    else:
+        return False
 
 
 

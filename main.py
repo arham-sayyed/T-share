@@ -1,5 +1,6 @@
 import sys, os
 from connecs.envs import check_env_token, update_token
+from connecs.reqs import upload_file
 
 args = sys.argv
 
@@ -12,10 +13,11 @@ def main(args_list):
         if (args_list[1] == "-u") and os.path.exists(args_list[2]):
             if not check_env_token():
                 print("auth token is absent! \nuse `--change-token <token>` to set token")
-            upload(file_path = args_list[2])
+            upload_file(file_path = args_list[2])
 
         elif args_list[1] == "-g":
-            download(url = args_list[2])
+            # download(url = args_list[2])
+            print("download feature is still under development!")
 
         elif args_list[1] == "--change-token":
             update_token(args_list[2])
