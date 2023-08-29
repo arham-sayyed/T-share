@@ -1,70 +1,61 @@
-import os, sys, requests
+import os
+import sys
+import requests
+import json
 
+# Define the path to the configuration file
+CONFIG_FILE = "config.json"
 
-def verify_token(token: str) -> bool: # run only when the token is being changed
-    # headers["Authorization"] = f"Bearer {token}"
+def verify_token(token: str) -> bool:
     headers = {
-    "Authorization": f"Bearer {token}",  # replace 'YOUR_TOKEN' with the token you want to verify
-    "Content-Type": "application/x-directory"
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/x-directory"
     }
     
-    # Making a benign request to list the first page of stored files
     response = requests.get(f"https://api.web3.storage/user/uploads", headers=headers)
     
-    # If the response is unauthorized, return False
     if response.status_code == 401:
         return False
-    # If the response is okay (status code 200), return True
     elif response.status_code == 200:
         return True
-    # For other responses, raise an exception (or handle differently as per your requirements)
     else:
         response.raise_for_status()
 
-
-def check_env_token() -> bool:  # run everytime when the tool is called
-    if "TSHARE_AUTH_TOKEN" in os.environ:
+def check_env_token() -> bool:
+    """Check if token exists in the config file."""
+    if load_token_from_config():
         return True
     else:
         return False
 
-
-
-
-def update_token(token: str): # called to change the token or add on installation
-    if verify_token(token = token):
-        os.environ['TSHARE_AUTH_TOKEN'] = str(token)
-        print("token updated successfully!")
+def update_token(token: str):
+    """Update or set the token in the config file after verification."""
+    if verify_token(token=token):
+        try:
+            save_token_to_config(token)
+            if load_token_from_config():
+                print("Token updated successfully!")
+            else:
+                print("Something went wrong.")
+        except Exception as e:
+            print(e)
     else:
-        print("invalid token!")
+        print("Invalid token!")
         exit()
 
+def save_token_to_config(token):
+    """Save the token to a config file."""
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump({"TSHARE_AUTH_TOKEN": token}, f)
 
+def load_token_from_config():
+    """Load the token from the config file, if it exists."""
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r') as f:
+            config = json.load(f)
+            return config.get("TSHARE_AUTH_TOKEN", None)
+    return None
 
 def get_token() -> str | bool:
-    if check_env_token():
-        return str(os.environ['TSHARE_AUTH_TOKEN'])
-    else:
-        return False
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    """Retrieve the token from the config file."""
+    return load_token_from_config() or False

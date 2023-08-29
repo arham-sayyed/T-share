@@ -22,7 +22,7 @@ def upload_file(file_path):
         print(response.json())
         print("\n\n")
         cid = response.json()["cid"]
-        return f"https://dweb.link/ipfs/{cid}"
+        return f"https://{cid}.ipfs.w3s.link"
 
     else:
         print("Upload Error:", response.text)

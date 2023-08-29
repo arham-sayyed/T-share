@@ -13,7 +13,9 @@ def main(args_list):
         if (args_list[1] == "-u") and os.path.exists(args_list[2]):
             if not check_env_token():
                 print("auth token is absent! \nuse `--change-token <token>` to set token")
-            upload_file(file_path = args_list[2])
+            file_link = upload_file(file_path = args_list[2])
+            if file_link:
+                print(f"upload successfull\n {file_link}")
 
         elif args_list[1] == "-g":
             # download(url = args_list[2])
@@ -27,5 +29,6 @@ def main(args_list):
         print(f"Error: {e} \nin main")
         return False
     
-
+if __name__ == "__main__":
+    main(args_list=args)
 
