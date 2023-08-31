@@ -2,6 +2,7 @@ import pyrebase, json, os
 from firebase_files.firebase_auth import *
 
 CONFIG_FILE = "config.json"
+SESSION_FILE = os.path.join(os.path.expanduser('~'), '.tshare_session.json')
 
 def load_config_from_file():
     """Load the token from the config file, if it exists."""
@@ -13,55 +14,99 @@ def load_config_from_file():
 
 config = load_config_from_file()
 
+def load_session():
+    if os.path.exists(SESSION_FILE):
+        with open(SESSION_FILE, 'r') as f:
+            return json.load(f)
+    return None
+
 if config:
     firebase = pyrebase.initialize_app(config)
     db = firebase.database()
 
+def email_to_username(email):
+    return email.replace("@", "").replace(".", "")
+
 def share_link(sender_email, receiver_email, link):
     try:
-        if auth.current_user:
-            # Retrieve sender's UID
-            sender_uid = auth.get_account_info(auth.current_user['idToken'])['users'][0]['localId']
+        session_data = load_session()
+        if not session_data:
+            print("Please log in first.")
+            return False
+        
+        sender_username = email_to_username(sender_email)
+        receiver_username = email_to_username(receiver_email)
+        
+        # Save the link under the sender's username
+        sent_data = {
+            "link": link,
+            "receiver": receiver_username
+        }
+        db.child("users").child(sender_username).child("sent_links").push(sent_data)
+        
+        # Save the link under receiver's username indicating it was shared by sender
+        received_data = {
+            "link": link,
+            "sender": sender_username
+        }
+        db.child("users").child(receiver_username).child("received_links").push(received_data)
+        return True
 
-            print(sender_uid)
-            
-            # Save the link under the sender's UID (this step can be skipped if not required)
-            db.child("users").child(sender_uid).child("sent_links").push(link)
-            
-            # Retrieve receiver's UID from their email (this requires a function which we will define next)
-            receiver_uid = get_uid_from_email(receiver_email)
-            
-            if receiver_uid:
-                # Save the link under receiver's UID indicating it was shared by sender
-                db.child("users").child(receiver_uid).child("received_links").child(sender_uid).push(link)
-                return True
-            else:
-                print("Receiver email not found in the system.")
-                return False
-        else:
-            print("please log in first.")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {e} in share link")
         return False
 
-def get_uid_from_email(email):
-    all_users = db.child("email_to_uid").get().val()
-    return all_users.get(email, None)
 
-def get_shared_links():
+def get_shared_links_for_current_user():
     try:
         # Fetch UID of the currently logged-in user
-        uid = auth.current_user['localId']
+        session_data = load_session()  # Assuming session data has email info
+        if not session_data:
+            print("Please log in first.")
+            return None
 
-        # Fetch links shared with the user
-        received_links = db.child("users").child(uid).child("received_links").get().val()
+        current_user_email = session_data['email']
+        username = email_to_username(current_user_email)
         
-        return received_links
-    except AttributeError:
-        print("you are not currently logged in.")
-        return None
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
-    
+        # Fetch links shared with the user
+        received_links_data = db.child("users").child(username).child("received_links").get().val()
+        # print(received_links_data)
+        
+        received_links = []
+        if received_links_data:
+            for _, link_data in received_links_data.items():
+                received_links.append((link_data["link"], link_data["sender"]))
+        
+        # Similarly for sent links, if needed
+        # ...
 
+        return received_links
+    except Exception as e:
+        print(f"Error: {e} in get_shared_links_for_current_user")
+        return None
+
+def get_sent_links_for_current_user():
+    try:
+        # Fetch UID of the currently logged-in user
+        session_data = load_session()  # Assuming session data has email info
+        if not session_data:
+            print("Please log in first.")
+            return None
+
+        current_user_email = session_data['email']
+        username = email_to_username(current_user_email)
+        
+        # Fetch links sent by the user
+        sent_links_data = db.child("users").child(username).child("sent_links").get().val()
+        
+        sent_links = []
+        if sent_links_data:
+            for _, link_data in sent_links_data.items():
+                sent_links.append((link_data["link"], link_data["receiver"]))
+        
+        return sent_links
+    except Exception as e:
+        print(f"Error: {e} in get_sent_links_for_current_user")
+        return None
+
+# get_shared_links_for_current_user()

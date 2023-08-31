@@ -38,7 +38,7 @@ def update_token(token: str):
             else:
                 print("Something went wrong.")
         except Exception as e:
-            print(e)
+            print("Error: ", e , "in update token")
     else:
         print("Invalid token!")
         exit()

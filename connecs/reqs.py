@@ -25,6 +25,6 @@ def upload_file(file_path):
         return f"https://{cid}.ipfs.w3s.link"
 
     else:
-        print("Upload Error:", response.text)
+        print("Upload Error:", response.text,  "in upload file")
         return None
 
